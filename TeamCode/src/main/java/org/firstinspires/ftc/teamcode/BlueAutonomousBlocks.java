@@ -8,6 +8,7 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.DigitalChannel;
 import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.LED;
@@ -25,6 +26,7 @@ import org.firstinspires.ftc.teamcode.drive.SampleMecanumDrive;
 //about 6 inches away
 //right dSensor to intake = 4 inches
 //left dSensor to intake =
+//fails right after intake
 @Config
 @Autonomous(name = "BlueAutoWarehouse", group = "Autonomous")
 public class BlueAutonomousBlocks extends LinearOpMode {
@@ -44,43 +46,9 @@ public class BlueAutonomousBlocks extends LinearOpMode {
     Orientation angles;
     public SampleMecanumDrive drive;
     public Pose2d lineUpWithOpening;
-    //public LED intakeLight;
+    //public DigitalChannel intakeLight; //ADD BACK
     public Pose2d startingPose;
     public Vector2d shippingHubPose;
-
-   /* public void init(HardwareMap ahwMap) {
-        hwMap = ahwMap;
-
-
-        dSensorRight = hardwareMap.get(DistanceSensor.class, "dSensorRight");
-        dSensorLeft = hardwareMap.get(DistanceSensor.class, "dSensorLeft");
-        dSensorIntake = hardwareMap.get(DistanceSensor.class, "dSensorIntake");
-        frontLeft = hardwareMap.get(DcMotor.class, "frontLeft");
-        frontRight = hardwareMap.get(DcMotor.class, "frontRight");
-        backLeft = hardwareMap.get(DcMotor.class, "backLeft");
-        backRight = hardwareMap.get(DcMotor.class, "backRight");
-        elevator = hardwareMap.get(DcMotor.class, "elevator");
-        intake = hardwareMap.get(DcMotor.class, "intake");
-
-
-        frontLeft.setDirection(DcMotor.Direction.FORWARD);
-        backLeft.setDirection(DcMotor.Direction.FORWARD);
-        frontRight.setDirection(DcMotor.Direction.REVERSE);
-        backRight.setDirection(DcMotor.Direction.REVERSE);
-        elevator.setDirection(DcMotor.Direction.FORWARD); //FIX
-        elevator.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        intake.setDirection(DcMotorSimple.Direction.FORWARD); //FIX
-
-        this.stopDriving();
-
-        frontLeft.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        frontRight.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        backLeft.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        backRight.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        elevator.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        drive = new SampleMecanumDrive(ahwMap);
-        drive.setPoseEstimate(new Pose2d());
-    } */
 
     public void stopDriving() {
         frontLeft.setPower(0);
@@ -89,79 +57,35 @@ public class BlueAutonomousBlocks extends LinearOpMode {
         backRight.setPower(0);
     }
 
-    public void moveForward(double power) {
-        frontLeft.setPower(power);
-        frontRight.setPower(power);
-        backLeft.setPower(power);
-        backRight.setPower(power);
-    }
-
-    public void moveBackward(double power) {
-        frontLeft.setPower(-power);
-        frontRight.setPower(-power);
-        backLeft.setPower(-power);
-        backRight.setPower(-power);
-    }
-
-    public void runIntake() {
-        ElapsedTime intakeTime = new ElapsedTime();
-        intakeTime.reset();
-        while(opModeIsActive() && intakeTime.seconds() < 1) { //FIX may take more/less than 1 seconds
-            intake.setPower(1); //FIX don't know if works
-        }
-    }
-
-    public void stopIntake() {
-
-        intake.setPower(0);
-    }
-
-    public void moveToDuck() {
-        drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).forward(12).build()); //FIX check if moves all the way to duck
-    }
-
     public int detectDuck() {
         //if 1 then duck in middle
         //if 0 duck on right
         //if 2 duck on left
-        if (dSensorRight.getDistance(DistanceUnit.INCH) < 22) { //fix to correct
-            return 1;
-        }
-        drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).strafeRight(8).build()); //FIX was 8.5
-
-        if (dSensorRight.getDistance(DistanceUnit.INCH) < 22) { //fix to correct
+        if (dSensorRight.getDistance(DistanceUnit.CM) < 35.9) { //fix to correct
+            //return 1;
             return 0;
         }
-        return 2;
-    }
-
-    public void moveElevatorOneStep() {
-        elevator.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        elevator.setTargetPosition(1120); //FIX change if reaches
-        elevator.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        stopElevator();
-        elevator.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-    }
-
-    public void stopElevator() {
-
-        while(!elevator.isBusy()) {
-            elevator.setPower(0);
+        if(dSensorLeft.getDistance(DistanceUnit.CM) < 35.9) {
+            //return 2;
+            return 1;
         }
+        //return 0;
+        return 2;
+        //drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).strafeRight(8).build()); //FIX was 8.5
     }
 
     public void moveToShippingHub(int duck) {
-        if (duck == 1) {
+        if (duck == 1 || duck == 2 || duck == 0) {
             drive.followTrajectorySequence(drive.trajectorySequenceBuilder(drive.getPoseEstimate())
-                    .strafeRight(28)
-                    .forward(16)
+                    .strafeRight(22.5)
+                    .forward(9)
                     .build()); //FIX might not go to shipping hub (from middle)
             //drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).forward(3).build());
         }
-        else if(detectDuck() == 0 || detectDuck() == 2) {
+        /*else if(detectDuck() == 0 || detectDuck() == 2) {
             drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).strafeRight(19.5).build()); //FIX might not go to shipping hub (from right)
             drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).forward(16).build());
-        }
+        } */
     }
 
     public void resetElevator() {
@@ -170,7 +94,6 @@ public class BlueAutonomousBlocks extends LinearOpMode {
     }
 
     public void placeInFirstLevel() {
-
 
         elevator.setTargetPosition(190);
         elevator.setMode(DcMotor.RunMode.RUN_TO_POSITION);
@@ -184,13 +107,13 @@ public class BlueAutonomousBlocks extends LinearOpMode {
 
     public void placeInSecondLevel() {
 
-        elevator.setTargetPosition(280);
+        elevator.setTargetPosition(285);
         elevator.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         elevator.setPower(-1);
-        /*while (Math.abs(elevator.getCurrentPosition() - 280) > 5){
+        /*while (Math.abs(elevator.getCurrentPosition() - 285) > 5){
         }
         outtakeBlock();*/
-        Runnable thread = new Thread(new WaitTask(elevator, 280, this));
+        Runnable thread = new Thread(new WaitTask(elevator, 285, this));
         thread.run();
     }
 
@@ -213,12 +136,15 @@ public class BlueAutonomousBlocks extends LinearOpMode {
          shippingHubPose = drive.getPoseEstimate().vec();
         if(duck == 0) { //duck on right
             placeInFirstLevel();
+
         }
         else if(duck == 1) { //duck in middle
-            placeInSecondLevel();
+            placeInSecondLevel(); // correct one
+            //placeInFirstLevel(); //check for error
         }
         else if(duck == 2) { //duck on left
             placeInThirdLevel();
+            //placeInFirstLevel();
         }
 
     }
@@ -230,7 +156,7 @@ public class BlueAutonomousBlocks extends LinearOpMode {
         while(dSensorIntake.getDistance(DistanceUnit.INCH) > 1.5) { //FIX
             intake.setPower(1);
             /*if(dSensorIntake.getDistance(DistanceUnit.INCH) < 1) {
-                intakeLight.enableLight(true);
+                intakeLight.setState(true);
             }*/
         } //ADD BACK
         //intake.setPower(0);
@@ -239,10 +165,10 @@ public class BlueAutonomousBlocks extends LinearOpMode {
     public void outtakeBlock() {
         intake.setDirection(DcMotor.Direction.FORWARD);
         //intake.setPower(1);
-        while(dSensorIntake.getDistance(DistanceUnit.INCH) < 10) { //FIX
-            intake.setPower(1);
+        while(dSensorIntake.getDistance(DistanceUnit.INCH) < 5) { //FIX
+            intake.setPower(0.5);
             /*if(dSensorIntake.getDistance(DistanceUnit.INCH) > 2) {
-                intakeLight.enableLight(false);
+                intakeLight.setState(false);
             }*/
         } //ADD BACK
         intake.setPower(0);
@@ -270,7 +196,9 @@ public class BlueAutonomousBlocks extends LinearOpMode {
         //runIntake();
         //stopIntake();
         intakeBlock();
-        drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).back(moveBackInches).strafeLeft(4).build());
+        drive.followTrajectorySequence(drive.trajectorySequenceBuilder(drive.getPoseEstimate()).back(moveBackInches).strafeLeft(4).build());
+        //drive.setPoseEstimate(drive.getPoseEstimate()); if doesnt work then add
+        //drive.followTrajectorySequence(drive.trajectorySequenceBuilder(drive.getPoseEstimate()).back(moveBackInches).strafeLeft(4).build());
     }
 
     public void moveToBlock() {
@@ -293,6 +221,7 @@ public class BlueAutonomousBlocks extends LinearOpMode {
             Pose2d currentPose = drive.getPoseEstimate();
             while(dSensorRight.getDistance(DistanceUnit.INCH) > 31) { //FIX WILL CAUSE ISSUE
                 drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).strafeRight(1).build());
+                //drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).strafeLeft(1).build());
             }
             moveToBlock();
             /*if(!(drive.getPoseEstimate().vec().distTo(currentVector) < 1)) { //in correct spot
@@ -303,52 +232,20 @@ public class BlueAutonomousBlocks extends LinearOpMode {
 
     }
 
-    void resetEncoders(){
-        frontLeft.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        backLeft.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        frontRight.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        backRight.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-
-        frontLeft.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        backLeft.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        frontRight.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        backRight.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-
-    }
     public void goToWarehouse() {
         Pose2d pose = drive.getPoseEstimate();
-        drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).back(10).build()); //FIX back was 16
-        drive.turn(Math.toRadians(90)); //FIX IDK why negative
+        //drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).build()); //FIX back was 10
+        drive.turn(Math.toRadians(82)); //FIX IDK why negative
         //straighten robot
-        if(pose.getHeading() + Math.toRadians(90) != drive.getPoseEstimate().getHeading()){
-            drive.turn((pose.getHeading() + Math.toRadians(90) - drive.getPoseEstimate().getHeading()));
-        }
-        drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).forward(47).build()); //FIX strafe not needed, make sure goes over the barrier
+
+        drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).forward(55).build()); //FIX strafe not needed, make sure goes over the barrier
         //FIX go over barrier then reset turn
-        drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).forward(3).build()); //FIX implement a vector
-        if(pose.getHeading() + Math.toRadians(90) != drive.getPoseEstimate().getHeading()){
-            drive.turn((pose.getHeading() + Math.toRadians(90) - drive.getPoseEstimate().getHeading()));
-        }
-    }
+        //drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).forward(3).build()); //FIX implement a vector
 
-    public void positionInWarehouse() {
-//        drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).strafeRight(12/*FIX*/).forward(6/*FIX*/).build());
-//        drive.turn(-Math.PI/2);
-//        lineUpWithOpening = drive.getPoseEstimate();
-//        lineUpWithOpeningHeading = drive.getPoseEstimate().getHeading(); This is if placing in shared hub
-        drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).strafeLeft(6/*FIX*/).build()); //This is if placing in alliance hub
-    }
-
-    public void moveToOpening() {
-        drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).lineToLinearHeading(lineUpWithOpening).build());
-    }
-
-    public void goToSharedShippingHub() {
-        drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).strafeLeft(6/*FIX*/).forward(12/*FIX*/).strafeRight(6/*FIX*/).forward(1/*FIX might not need*/).build());
     }
 
     public void resetBackToWareHouse() {
-        drive.turn(Math.toRadians(-90)); //FIX MIGHT TURN WRONG WAY
+        drive.turn(Math.toRadians(82)); //FIX MIGHT TURN WRONG WAY
         //drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).strafeLeft(6/*FIX*/).forward(48/*FIX*/).build());
         drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).forward(59).build());
     }
@@ -362,28 +259,25 @@ public class BlueAutonomousBlocks extends LinearOpMode {
         placeInFirstLevel(); //FIX may be to low/high
         resetBackToWareHouse();*/ //This is for placing in shared hub
         //straighten robot
-        if(drive.getPoseEstimate().getHeading() != startingPose.getHeading() + Math.toRadians(90)) {
-            drive.turn((startingPose.getHeading() + Math.toRadians(90)) - drive.getPoseEstimate().getHeading());
-        }
         getBlock();
-        if(drive.getPoseEstimate().getHeading() != startingPose.getHeading() + Math.toRadians(90)) {
-            drive.turn((startingPose.getHeading() + Math.toRadians(90)) - drive.getPoseEstimate().getHeading());
-        }
+
         //drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).strafeRight(6).back(48).build());
         drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).back(5).build());
         //FIX go over barrier implement a vec
-        if(drive.getPoseEstimate().getHeading() != startingPose.getHeading() + Math.toRadians(90)) {
-            drive.turn((startingPose.getHeading() + Math.toRadians(90)) - drive.getPoseEstimate().getHeading());
-        }
+
         drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).back(47).build());
-        drive.turn(Math.toRadians(-90)); // FIX MIGHT TURN WRONG WAY
-        drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).forward(10).build());
+        drive.turn(Math.toRadians(-82)); // FIX MIGHT TURN WRONG WAY
+        drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).forward(5).build());
         //OR FIX
         //drive.turn(Math.toRadians(-90);
         //drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).lineTo(shippingHubPose).build());
         placeInThirdLevel();
-        drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).back(10).build());
+        drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).back(5).build());
         resetBackToWareHouse();
+    }
+
+    public void moveToBarcode() {
+        drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).forward(5.5).build());
     }
 
     public void runOpMode() {
@@ -398,7 +292,7 @@ public class BlueAutonomousBlocks extends LinearOpMode {
         backRight = hardwareMap.get(DcMotor.class, "backRight");
         elevator = hardwareMap.get(DcMotor.class, "leftArm");
         intake = hardwareMap.get(DcMotor.class, "intakeSystem");
-        //intakeLight = hardwareMap.get(LED.class, "intakeLight"); //ADD BACK
+        //intakeLight = hardwareMap.get(DigitalChannel.class, "intakeLight"); //ADD BACK
         frontLeft.setDirection(DcMotor.Direction.FORWARD);
         backLeft.setDirection(DcMotor.Direction.FORWARD);
         frontRight.setDirection(DcMotor.Direction.REVERSE);
@@ -421,6 +315,7 @@ public class BlueAutonomousBlocks extends LinearOpMode {
         parameters.calibrationDataFile = "BNO055IMUCalibration.json";
         imu = hardwareMap.get(BNO055IMU.class, "imu");
         imu.initialize(parameters);
+        //intakeLight.setMode(DigitalChannel.Mode.OUTPUT);
 
         //make sure imu is mounted flat on robot
         angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
@@ -429,22 +324,13 @@ public class BlueAutonomousBlocks extends LinearOpMode {
 
         waitForStart();
         while(opModeIsActive()){
-        //moveToDuck(); //go to ducks
+        moveToBarcode();
         placeInitCube(); //detect which duck, move to shipping hub, and place cube
         goToWarehouse(); //go to warehouse from shipping hub
-        //positionInWarehouse(); //face blocks
-        /*
-        pickUpBlock(); //FIX need to move to block
-        moveToOpening(); //go to opening between storage and shared shipping hub
-        drive.turn(Math.PI); //turn around
-        goToSharedShippingHub(); //go to shared hub
-        placeInFirstLevel(); //place in shared hub FIX might be too low or high
-        resetBackToWareHouse();// go back and pick up cube
-        getBlock();
-        moveToOpening();
-        */
-        getBlockAndPlaceBlockInSharedHubThenReset(); //do for as much time as you have
-        getBlockAndPlaceBlockInSharedHubThenReset();
+        //getBlockAndPlaceBlockInSharedHubThenReset(); //do for as much time as you have
+        //getBlockAndPlaceBlockInSharedHubThenReset();
+
+        break;
         //park
     }
 }
