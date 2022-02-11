@@ -28,8 +28,8 @@ import org.firstinspires.ftc.teamcode.drive.SampleMecanumDrive;
 //left dSensor to intake =
 //fails right after intake
 @Config
-@Autonomous(name = "BlueAutoWarehouse", group = "Autonomous")
-public class BlueAutonomousBlocks extends LinearOpMode {
+@Autonomous(name = "RedAutoWarehouse", group = "Autonomous")
+public class RedAutonomousBlocks extends LinearOpMode {
     public ElapsedTime runtime = new ElapsedTime();
     public DcMotor frontLeft = null;
     public DcMotor frontRight = null;
@@ -63,25 +63,29 @@ public class BlueAutonomousBlocks extends LinearOpMode {
         //if 2 duck on left
         if (dSensorRight.getDistance(DistanceUnit.CM) < 35.9) { //fix to correct
             //return 1;
-            return 0;
+            return 1;
         }
         if(dSensorLeft.getDistance(DistanceUnit.CM) < 35.9) {
             //return 2;
-            return 1;
+            return 2;
         }
         //return 0;
-        return 2;
+        return 0;
         //drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).strafeRight(8).build()); //FIX was 8.5
     }
 
     public void moveToShippingHub(int duck) {
         if (duck == 1 || duck == 2 || duck == 0) {
             drive.followTrajectorySequence(drive.trajectorySequenceBuilder(drive.getPoseEstimate())
-                    .strafeRight(22.5)
+                    .strafeLeft(22.5)
                     .forward(9)
                     .build()); //FIX might not go to shipping hub (from middle)
             //drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).forward(3).build());
         }
+        /*else if(detectDuck() == 0 || detectDuck() == 2) {
+            drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).strafeRight(19.5).build()); //FIX might not go to shipping hub (from right)
+            drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).forward(16).build());
+        } */
     }
 
     public void resetElevator() {
@@ -97,7 +101,7 @@ public class BlueAutonomousBlocks extends LinearOpMode {
         /*while (Math.abs(elevator.getCurrentPosition() - 190) > 5){
         }
         outtakeBlock();*/
-        Runnable thread = new Thread(new WaitTask(elevator, 190, this));
+        Runnable thread = new Thread(new Wait(elevator, 190, this));
         thread.run();
     }
 
@@ -109,7 +113,7 @@ public class BlueAutonomousBlocks extends LinearOpMode {
         /*while (Math.abs(elevator.getCurrentPosition() - 285) > 5){
         }
         outtakeBlock();*/
-        Runnable thread = new Thread(new WaitTask(elevator, 285, this));
+        Runnable thread = new Thread(new Wait(elevator, 285, this));
         thread.run();
     }
 
@@ -121,15 +125,15 @@ public class BlueAutonomousBlocks extends LinearOpMode {
         /*while (Math.abs(elevator.getCurrentPosition() - 395) > 5){
         }
         outtakeBlock();*/
-        Runnable thread = new Thread(new WaitTask(elevator, 395, this));
+        Runnable thread = new Thread(new Wait(elevator, 395, this));
         thread.run();
     }
 
     public void placeInitCube() {
         startingPose = drive.getPoseEstimate();
-         int duck = detectDuck();
-         moveToShippingHub(duck);
-         shippingHubPose = drive.getPoseEstimate().vec();
+        int duck = detectDuck();
+        moveToShippingHub(duck);
+        shippingHubPose = drive.getPoseEstimate().vec();
         if(duck == 0) { //duck on right
             placeInFirstLevel();
 
@@ -231,7 +235,7 @@ public class BlueAutonomousBlocks extends LinearOpMode {
     public void goToWarehouse() {
         Pose2d pose = drive.getPoseEstimate();
         //drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).build()); //FIX back was 10
-        drive.turn(Math.toRadians(82)); //FIX IDK why negative
+        drive.turn(Math.toRadians(-82)); //FIX IDK why negative
         //straighten robot
 
         drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).forward(55).build()); //FIX strafe not needed, make sure goes over the barrier
@@ -320,25 +324,25 @@ public class BlueAutonomousBlocks extends LinearOpMode {
 
         waitForStart();
         while(opModeIsActive()){
-        moveToBarcode();
-        placeInitCube(); //detect which duck, move to shipping hub, and place cube
-        goToWarehouse(); //go to warehouse from shipping hub
-        //getBlockAndPlaceBlockInSharedHubThenReset(); //do for as much time as you have
-        //getBlockAndPlaceBlockInSharedHubThenReset();
+            moveToBarcode();
+            placeInitCube(); //detect which duck, move to shipping hub, and place cube
+            goToWarehouse(); //go to warehouse from shipping hub
+            //getBlockAndPlaceBlockInSharedHubThenReset(); //do for as much time as you have
+            //getBlockAndPlaceBlockInSharedHubThenReset();
 
-        break;
-        //park
+            break;
+            //park
+        }
     }
 }
-}
 
-class WaitTask implements Runnable {
+class Wait implements Runnable {
 
     private DcMotor motor;
     private int target;
-    private BlueAutonomousBlocks auto;
+    private RedAutonomousBlocks auto;
 
-    public WaitTask(DcMotor motor, int target, BlueAutonomousBlocks auto){
+    public Wait(DcMotor motor, int target, RedAutonomousBlocks auto){
         this.motor = motor;
         this.target = target;
         this.auto = auto;
