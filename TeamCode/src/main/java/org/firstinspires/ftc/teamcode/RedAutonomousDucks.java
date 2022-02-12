@@ -20,16 +20,16 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 import org.firstinspires.ftc.teamcode.drive.SampleMecanumDrive;
 //TILE DIMENSION 24 x 24 INCH
-//1st level tick count = -190
-//2nd level tick count = -280
-//3rd level tick count = -395
+//1st level tick count = 190
+//2nd level tick count = 280
+//3rd level tick count = 395
 //about 6 inches away
 //right dSensor to intake = 4 inches
 //left dSensor to intake =
 //fails right after intake
 @Config
-@Autonomous(name = "RedAutoWarehouse", group = "Autonomous")
-public class RedAutonomousBlocks extends LinearOpMode {
+@Autonomous(name = "RedAutoDucks", group = "Autonomous")
+public class RedAutonomousDucks extends LinearOpMode {
     public ElapsedTime runtime = new ElapsedTime();
     public DcMotor frontLeft = null;
     public DcMotor frontRight = null;
@@ -49,7 +49,6 @@ public class RedAutonomousBlocks extends LinearOpMode {
     //public DigitalChannel intakeLight; //ADD BACK
     public Pose2d startingPose;
     public Vector2d shippingHubPose;
-    public Vector2d warehousePose;
 
     public void stopDriving() {
         frontLeft.setPower(0);
@@ -62,31 +61,27 @@ public class RedAutonomousBlocks extends LinearOpMode {
         //if 1 then duck in middle
         //if 0 duck on right
         //if 2 duck on left
-        if (dSensorRight.getDistance(DistanceUnit.CM) < 35.9) { //fix to correct
+        if (dSensorLeft.getDistance(DistanceUnit.CM) < 35.9) { //fix to correct
             //return 1;
             return 1;
         }
-        if(dSensorLeft.getDistance(DistanceUnit.CM) < 35.9) {
+        if(dSensorRight.getDistance(DistanceUnit.CM) < 35.9) {
             //return 2;
-            return 2;
+            return 0;
         }
         //return 0;
-        return 0;
+        return 2;
         //drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).strafeRight(8).build()); //FIX was 8.5
     }
 
     public void moveToShippingHub(int duck) {
         if (duck == 1 || duck == 2 || duck == 0) {
             drive.followTrajectorySequence(drive.trajectorySequenceBuilder(drive.getPoseEstimate())
-                    .strafeLeft(21)
+                    .strafeRight(22.5)
                     .forward(9)
                     .build()); //FIX might not go to shipping hub (from middle)
             //drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).forward(3).build());
         }
-        /*else if(detectDuck() == 0 || detectDuck() == 2) {
-            drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).strafeRight(19.5).build()); //FIX might not go to shipping hub (from right)
-            drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).forward(16).build());
-        } */
     }
 
     public void resetElevator() {
@@ -102,7 +97,7 @@ public class RedAutonomousBlocks extends LinearOpMode {
         /*while (Math.abs(elevator.getCurrentPosition() - 190) > 5){
         }
         outtakeBlock();*/
-        Runnable thread = new Thread(new Wait(elevator, 190, this));
+        Runnable thread = new Thread(new WaitTask3(elevator, 190, this));
         thread.run();
     }
 
@@ -114,7 +109,7 @@ public class RedAutonomousBlocks extends LinearOpMode {
         /*while (Math.abs(elevator.getCurrentPosition() - 285) > 5){
         }
         outtakeBlock();*/
-        Runnable thread = new Thread(new Wait(elevator, 285, this));
+        Runnable thread = new Thread(new WaitTask3(elevator, 285, this));
         thread.run();
     }
 
@@ -126,7 +121,7 @@ public class RedAutonomousBlocks extends LinearOpMode {
         /*while (Math.abs(elevator.getCurrentPosition() - 395) > 5){
         }
         outtakeBlock();*/
-        Runnable thread = new Thread(new Wait(elevator, 395, this));
+        Runnable thread = new Thread(new WaitTask3(elevator, 395, this));
         thread.run();
     }
 
@@ -135,7 +130,7 @@ public class RedAutonomousBlocks extends LinearOpMode {
         int duck = detectDuck();
         moveToShippingHub(duck);
         shippingHubPose = drive.getPoseEstimate().vec();
-        if(duck == 0) { //duck on right
+        if(duck == 2) { //duck on left
             placeInFirstLevel();
 
         }
@@ -143,7 +138,7 @@ public class RedAutonomousBlocks extends LinearOpMode {
             placeInSecondLevel(); // correct one
             //placeInFirstLevel(); //check for error
         }
-        else if(duck == 2) { //duck on left
+        else if(duck == 0) { //duck on right
             placeInThirdLevel();
             //placeInFirstLevel();
         }
@@ -219,7 +214,7 @@ public class RedAutonomousBlocks extends LinearOpMode {
             //drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).lineTo(currentPosition.vec()).build()); //FIX might not be correct pose
         } else {         //Strafe right until lines up with an object
             Vector2d currentVector = drive.getPoseEstimate().vec();
-            //Pose2d currentPose = drive.getPoseEstimate();
+            Pose2d currentPose = drive.getPoseEstimate();
             while(dSensorRight.getDistance(DistanceUnit.INCH) > 31) { //FIX WILL CAUSE ISSUE
                 drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).strafeRight(1).build());
                 //drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).strafeLeft(1).build());
@@ -233,16 +228,9 @@ public class RedAutonomousBlocks extends LinearOpMode {
 
     }
 
-    public void goToWarehouse() {
-        Pose2d pose = drive.getPoseEstimate();
-        //drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).build()); //FIX back was 10
-        drive.turn(Math.toRadians(-82)); //FIX IDK why negative
-        //straighten robot
-
-        drive.followTrajectorySequence(drive.trajectorySequenceBuilder(drive.getPoseEstimate()).strafeRight(5).forward(55).build()); //FIX strafe not needed, make sure goes over the barrier
-        //FIX go over barrier then reset turn
-        //drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).forward(3).build()); //FIX implement a vector
-
+    public void goToCarousel() {
+        drive.turn(Math.toRadians(-90));
+        drive.followTrajectorySequence(drive.trajectorySequenceBuilder(drive.getPoseEstimate()).strafeRight(24).back(40).build());
     }
 
     public void resetBackToWareHouse() {
@@ -251,35 +239,24 @@ public class RedAutonomousBlocks extends LinearOpMode {
         drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).forward(59).build());
     }
 
-    public void getBlockAndPlaceBlockInSharedHubThenReset() {
-        //FIX need to move to block
-        /*getBlock();
-        moveToOpening();
-        drive.turn(Math.PI/2);
-        goToSharedShippingHub();
-        placeInFirstLevel(); //FIX may be to low/high
-        resetBackToWareHouse();*/ //This is for placing in shared hub
-        //straighten robot
-        warehousePose = drive.getPoseEstimate().vec();
-        getBlock();
-
-        //drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).strafeRight(6).back(48).build());
+    public void parkBot() {
+        drive.followTrajectorySequence(drive.trajectorySequenceBuilder(drive.getPoseEstimate()).strafeLeft(28.5).back(5).build());
         //drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).back(5).build());
-        //FIX go over barrier implement a vec
-
-        drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).lineTo(shippingHubPose).build());
-        drive.turn(Math.toRadians(82)); // FIX MIGHT TURN WRONG WAY
-        drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).forward(5).build());
-        //OR FIX
-        //drive.turn(Math.toRadians(-90);
-        //drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).lineTo(shippingHubPose).build());
-        placeInThirdLevel();
-        drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).lineTo(warehousePose).build());
-        //resetBackToWareHouse();
     }
 
     public void moveToBarcode() {
         drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).forward(5.5).build());
+    }
+
+    public void runCarousel(double power, long milliseconds) {
+        towerSpinner.setPower(power);
+        try {
+            Thread.sleep(milliseconds);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        towerSpinner.setPower(0);
     }
 
     public void runOpMode() {
@@ -293,6 +270,7 @@ public class RedAutonomousBlocks extends LinearOpMode {
         backLeft = hardwareMap.get(DcMotor.class, "backLeft");
         backRight = hardwareMap.get(DcMotor.class, "backRight");
         elevator = hardwareMap.get(DcMotor.class, "leftArm");
+        towerSpinner = hardwareMap.get(DcMotor.class, "towerSpinner");
         intake = hardwareMap.get(DcMotor.class, "intakeSystem");
         //intakeLight = hardwareMap.get(DigitalChannel.class, "intakeLight"); //ADD BACK
         frontLeft.setDirection(DcMotor.Direction.FORWARD);
@@ -302,6 +280,7 @@ public class RedAutonomousBlocks extends LinearOpMode {
         elevator.setDirection(DcMotor.Direction.FORWARD); //FIX
         elevator.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         intake.setDirection(DcMotorSimple.Direction.FORWARD); //FIX
+        towerSpinner.setDirection(DcMotorSimple.Direction.FORWARD);
 
         this.stopDriving();
 
@@ -326,25 +305,25 @@ public class RedAutonomousBlocks extends LinearOpMode {
 
         waitForStart();
         while(opModeIsActive()){
+            sleep(5000);
             moveToBarcode();
             placeInitCube(); //detect which duck, move to shipping hub, and place cube
-            goToWarehouse(); //go to warehouse from shipping hub
-            //getBlockAndPlaceBlockInSharedHubThenReset(); //do for as much time as you have
-            //getBlockAndPlaceBlockInSharedHubThenReset();
-
+            goToCarousel();
+            runCarousel(0.5, 6000);
+            parkBot();
             break;
             //park
         }
     }
 }
 
-class Wait implements Runnable {
+class WaitTask3 implements Runnable {
 
     private DcMotor motor;
     private int target;
-    private RedAutonomousBlocks auto;
+    private RedAutonomousDucks auto;
 
-    public Wait(DcMotor motor, int target, RedAutonomousBlocks auto){
+    public WaitTask3(DcMotor motor, int target, RedAutonomousDucks auto){
         this.motor = motor;
         this.target = target;
         this.auto = auto;

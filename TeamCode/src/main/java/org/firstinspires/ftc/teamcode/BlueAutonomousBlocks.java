@@ -49,6 +49,7 @@ public class BlueAutonomousBlocks extends LinearOpMode {
     //public DigitalChannel intakeLight; //ADD BACK
     public Pose2d startingPose;
     public Vector2d shippingHubPose;
+    public Vector2d warehousePose;
 
     public void stopDriving() {
         frontLeft.setPower(0);
@@ -94,9 +95,6 @@ public class BlueAutonomousBlocks extends LinearOpMode {
         elevator.setTargetPosition(190);
         elevator.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         elevator.setPower(-1);
-        /*while (Math.abs(elevator.getCurrentPosition() - 190) > 5){
-        }
-        outtakeBlock();*/
         Runnable thread = new Thread(new WaitTask(elevator, 190, this));
         thread.run();
     }
@@ -185,27 +183,27 @@ public class BlueAutonomousBlocks extends LinearOpMode {
         stopIntake();
         drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).back(moveBackInches).build());*/
         double moveBackInches = 0;
-        if(dSensorRight.getDistance(DistanceUnit.INCH) > 1) {
+        if(dSensorLeft.getDistance(DistanceUnit.INCH) > 1) {
             moveBackInches = dSensorRight.getDistance(DistanceUnit.INCH);
         }
-        drive.followTrajectorySequence(drive.trajectorySequenceBuilder(drive.getPoseEstimate()).strafeRight(4).forward(moveBackInches).build());
+        drive.followTrajectorySequence(drive.trajectorySequenceBuilder(drive.getPoseEstimate()).strafeLeft(4).forward(moveBackInches).build());
         //runIntake();
         //stopIntake();
         intakeBlock();
-        drive.followTrajectorySequence(drive.trajectorySequenceBuilder(drive.getPoseEstimate()).back(moveBackInches).strafeLeft(4).build());
+        drive.followTrajectorySequence(drive.trajectorySequenceBuilder(drive.getPoseEstimate()).back(moveBackInches).strafeRight(4).build());
         //drive.setPoseEstimate(drive.getPoseEstimate()); if doesnt work then add
         //drive.followTrajectorySequence(drive.trajectorySequenceBuilder(drive.getPoseEstimate()).back(moveBackInches).strafeLeft(4).build());
     }
 
     public void moveToBlock() {
-        double moveBackInchesFull = dSensorRight.getDistance(DistanceUnit.INCH);
+        double moveBackInchesFull = dSensorLeft.getDistance(DistanceUnit.INCH);
         drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).forward(moveBackInchesFull - 2).build());
         pickUpBlock();
         drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).back(moveBackInchesFull - 2).build());
     }
 
     public void getBlock() {
-        if(dSensorRight.getDistance(DistanceUnit.INCH) < 31 ) {
+        if(dSensorLeft.getDistance(DistanceUnit.INCH) < 31 ) {
             //strafe
             //Pose2d currentPosition = drive.getPoseEstimate();
             moveToBlock();
@@ -214,9 +212,9 @@ public class BlueAutonomousBlocks extends LinearOpMode {
             //drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).lineTo(currentPosition.vec()).build()); //FIX might not be correct pose
         } else {         //Strafe right until lines up with an object
             Vector2d currentVector = drive.getPoseEstimate().vec();
-            Pose2d currentPose = drive.getPoseEstimate();
-            while(dSensorRight.getDistance(DistanceUnit.INCH) > 31) { //FIX WILL CAUSE ISSUE
-                drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).strafeRight(1).build());
+            //Pose2d currentPose = drive.getPoseEstimate();
+            while(dSensorLeft.getDistance(DistanceUnit.INCH) > 31) { //FIX WILL CAUSE ISSUE
+                drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).strafeLeft(1).build());
                 //drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).strafeLeft(1).build());
             }
             moveToBlock();
@@ -229,12 +227,12 @@ public class BlueAutonomousBlocks extends LinearOpMode {
     }
 
     public void goToWarehouse() {
-        Pose2d pose = drive.getPoseEstimate();
+        //WarehousePose = drive.getPoseEstimate();
         //drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).build()); //FIX back was 10
         drive.turn(Math.toRadians(82)); //FIX IDK why negative
         //straighten robot
 
-        drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).forward(55).build()); //FIX strafe not needed, make sure goes over the barrier
+        drive.followTrajectorySequence(drive.trajectorySequenceBuilder(drive.getPoseEstimate()).strafeLeft(5).forward(55).build()); //FIX strafe not needed, make sure goes over the barrier
         //FIX go over barrier then reset turn
         //drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).forward(3).build()); //FIX implement a vector
 
@@ -255,21 +253,21 @@ public class BlueAutonomousBlocks extends LinearOpMode {
         placeInFirstLevel(); //FIX may be to low/high
         resetBackToWareHouse();*/ //This is for placing in shared hub
         //straighten robot
+        warehousePose = drive.getPoseEstimate().vec();
         getBlock();
 
         //drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).strafeRight(6).back(48).build());
-        drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).back(5).build());
-        //FIX go over barrier implement a vec
 
-        drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).back(47).build());
+        drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).lineTo(shippingHubPose).build());
         drive.turn(Math.toRadians(-82)); // FIX MIGHT TURN WRONG WAY
-        drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).forward(5).build());
+        //drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).forward(5).build());
         //OR FIX
         //drive.turn(Math.toRadians(-90);
         //drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).lineTo(shippingHubPose).build());
         placeInThirdLevel();
-        drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).back(5).build());
-        resetBackToWareHouse();
+        //drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).back(5).build());
+        //resetBackToWareHouse();
+        drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate()).lineTo(warehousePose).build());
     }
 
     public void moveToBarcode() {
